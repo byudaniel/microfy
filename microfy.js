@@ -1,8 +1,21 @@
-const Fastify = require('fastify')
-const axios = require('axios')
+const Fastify = require("fastify")
+const axios = require("axios")
+
+const localServices = {}
 
 function buildActionUrl(serviceName, actionName) {
-  return `http://{serviceName}/{actionName}`
+  const host = localServices[serviceName]
+    ? `localhost:{localPort}`
+    : serviceName
+  return `http://{host}/{actionName}`
+}
+
+function parseResponse(response) {
+  return response.data
+}
+
+function handleResponseError(err) {
+  console.log("***error", err)
 }
 
 const proxyHandler = {
@@ -10,47 +23,68 @@ const proxyHandler = {
     return prop in obj
       ? obj[prop]
       : {
-        act: (actionName, payload, config) => {
-          // TODO: ABSTRACT
-          return axios({
-            method: 'post',
-            url: buildActionUrl(prop, actionName),
-            data: payload
-          })
-        },
-        get: (actionName, params, config) => {
-          // TODO: ABSTRACT
-          return axios({
-            method: 'get',
-            url: buildActionUrl(prop, actionName),
-            data: payload
-          })
+          act: (actionName, payload, config) => {
+            // TODO: ABSTRACT
+            return axios({
+              method: "post",
+              url: buildActionUrl(prop, actionName),
+              data: payload
+            })
+              .then(parseResponse)
+              .catch(handleResponseError)
+          },
+          get: (actionName, params, config) => {
+            // TODO: ABSTRACT
+            return axios({
+              method: "get",
+              url: buildActionUrl(prop, actionName),
+              data: payload
+            })
+              .then(parseResponse)
+              .catch(handleResponseError)
+          }
         }
-      }
   }
 }
 
-function build(serviceName, { actions: {}, queries: {}, subscriptions: {} }) {
+function build(
+  serviceName,
+  { actions = {}, queries = {}, subscriptions = {} },
+  { port = 3000 } = {}
+) {
+  localServices[serviceName] = port
+
   const fastify = Fastify({ logger: true })
 
-  Object.entries(actions).forEach([actionName, config] => {
-    createRoute({ actionName, config, method: 'POST' })
-  })
+  function registerRoutes() {
+    Object.entries(actions).forEach(([actionName, config]) => {
+      createRoute({ actionName, config, method: "POST" })
+    })
 
-  Object.entries(queries).forEach([actionName, config] => {
-    createRoute({ actionName, config, method: 'GET' })
-  })
+    Object.entries(queries).forEach(([actionName, config]) => {
+      createRoute({ actionName, config, method: "GET" })
+    })
 
-  Object.entries(subscriptions).forEach([eventName, config] => {
-    throw new Error('Not implemented: TODO: NATS Streaming integration')
-  })
+    Object.entries(subscriptions).forEach(([eventName, config]) => {
+      throw new Error("Not implemented: TODO: NATS Streaming integration")
+    })
+  }
 
-  return new Proxy({
-    start: fastify.listen
-  }, proxyHandler)
+  const service = new Proxy(
+    {
+      start: () => {
+        registerRoutes()
+        fastify.listen(port)
+        return service
+      }
+    },
+    proxyHandler
+  )
+
+  return service
 
   function createRoute({ actionName, config, method }) {
-    const handler = config.handler || handler
+    const handler = config.handler || config
 
     fastify.route({
       method,
