@@ -4,9 +4,8 @@ const axios = require("axios")
 const localServices = {}
 
 function buildActionUrl(serviceName, actionName) {
-  const host = localServices[serviceName]
-    ? `localhost:{localPort}`
-    : serviceName
+  const localPort = localServices[serviceName]
+  const host = localPort ? `localhost:${localPort}` : serviceName
   return `http://${host}/${actionName}`
 }
 

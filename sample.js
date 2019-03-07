@@ -8,7 +8,7 @@ const services = Microfy(
         const id = "sample"
         console.log("Pending subscription created")
         await services.vehicle.act("reserve.vehicle", { vehicleId })
-        await services.billing.act("bill.subscription", {})
+        await services.billing.act("create.bill", {})
         console.log("Subscription activated")
       }
     }
@@ -23,7 +23,8 @@ Microfy(
   {
     actions: {
       "reserve.vehicle": async ({ vehicleId }) => {
-        console.log("Vehicle updated")
+        console.log("Vehicle reserved")
+        return {}
       }
     }
   },
@@ -39,6 +40,7 @@ Microfy(
       "create.bill": async ({ lineItems }) => {
         // Create bill
         console.log("Bill created")
+        return {}
       }
     }
   },
