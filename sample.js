@@ -1,55 +1,61 @@
 const Microfy = require("./microfy")
 
-const services = Microfy(
-  "subscription",
-  {
-    actions: {
-      "create.subscription": async ({ vehicleId }) => {
-        const id = "sample"
-        console.log("Pending subscription created")
-        await services.vehicle.act("reserve.vehicle", { vehicleId })
-        await services.billing.act("create.bill", {})
-        console.log("Subscription activated")
+async function createServices() {
+  const services = await Microfy(
+    "subscription",
+    {
+      actions: {
+        "create.subscription": async ({ vehicleId }) => {
+          const id = "sample"
+          console.log("Pending subscription created")
+          await services.vehicle.act("reserve.vehicle", { vehicleId })
+          await services.billing.act("create.bill", {})
+          console.log("Subscription activated")
+          return {}
+        }
       }
+    },
+    {
+      port: 3000
     }
-  },
-  {
-    port: 3000
-  }
-).start()
+  ).start()
 
-Microfy(
-  "vehicle",
-  {
-    actions: {
-      "reserve.vehicle": async ({ vehicleId }) => {
-        console.log("Vehicle reserved")
-        return {}
+  await Microfy(
+    "vehicle",
+    {
+      actions: {
+        "reserve.vehicle": async ({ vehicleId }) => {
+          console.log("Vehicle reserved")
+          return {}
+        }
       }
+    },
+    {
+      port: 3001
     }
-  },
-  {
-    port: 3001
-  }
-).start()
+  ).start()
 
-Microfy(
-  "billing",
-  {
-    actions: {
-      "create.bill": async ({ lineItems }) => {
-        // Create bill
-        console.log("Bill created")
-        return {}
+  await Microfy(
+    "billing",
+    {
+      actions: {
+        "create.bill": async ({ lineItems }) => {
+          // Create bill
+          console.log("Bill created")
+          return {}
+        }
       }
+    },
+    {
+      port: 3002
     }
-  },
-  {
-    port: 3002
-  }
-).start()
+  ).start()
+
+  return services
+}
 
 async function startCreateSubscriptionSaga() {
+  const services = await createServices()
   await services.subscription.act("create.subscription", {
     vehicleId: "TEST-VEHICLE"
   })

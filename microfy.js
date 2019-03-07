@@ -72,9 +72,9 @@ function build(
 
   const service = new Proxy(
     {
-      start: () => {
+      start: async () => {
         registerRoutes()
-        fastify.listen(port)
+        await fastify.listen(port)
         return service
       }
     },
