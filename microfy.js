@@ -16,6 +16,7 @@ function parseResponse(response) {
 
 function handleResponseError(err) {
   console.log("***error", err)
+  throw err
 }
 
 const proxyHandler = {
@@ -38,7 +39,7 @@ const proxyHandler = {
             return axios({
               method: "get",
               url: buildActionUrl(prop, actionName),
-              data: payload
+              params: payload
             })
               .then(parseResponse)
               .catch(handleResponseError)
