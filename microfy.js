@@ -38,7 +38,7 @@ const proxyHandler = {
             return axios({
               method: 'get',
               url: buildActionUrl(prop, actionName),
-              params: payload
+              params
             })
               .then(parseResponse)
               .catch(handleResponseError)
