@@ -7,7 +7,7 @@ function buildActionUrl(serviceName, actionName) {
   const host = localServices[serviceName]
     ? `localhost:{localPort}`
     : serviceName
-  return `http://{host}/{actionName}`
+  return `http://${host}/${actionName}`
 }
 
 function parseResponse(response) {
