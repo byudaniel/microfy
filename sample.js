@@ -1,16 +1,16 @@
-const Microfy = require("./microfy")
+const Microfy = require('./microfy')
 
 async function createServices() {
   const services = await Microfy(
-    "subscription",
+    'subscription',
     {
       actions: {
-        "create.subscription": async ({ vehicleId }) => {
-          const id = "sample"
-          console.log("Pending subscription created")
-          await services.vehicle.act("reserve.vehicle", { vehicleId })
-          await services.billing.act("create.bill", {})
-          console.log("Subscription activated")
+        'create.subscription': async ({ vehicleId }) => {
+          const id = 'sample'
+          console.log('Pending subscription created')
+          await services.vehicle.act('reserve.vehicle', { vehicleId })
+          await services.billing.act('create.bill', {})
+          console.log('Subscription activated')
           return {}
         }
       }
@@ -21,11 +21,11 @@ async function createServices() {
   ).start()
 
   await Microfy(
-    "vehicle",
+    'vehicle',
     {
       actions: {
-        "reserve.vehicle": async ({ vehicleId }) => {
-          console.log("Vehicle reserved")
+        'reserve.vehicle': async ({ vehicleId }) => {
+          console.log('Vehicle reserved')
           return {}
         }
       }
@@ -36,12 +36,12 @@ async function createServices() {
   ).start()
 
   await Microfy(
-    "billing",
+    'billing',
     {
       actions: {
-        "create.bill": async ({ lineItems }) => {
+        'create.bill': async ({ lineItems }) => {
           // Create bill
-          console.log("Bill created")
+          console.log('Bill created')
           return {}
         }
       }
@@ -56,8 +56,8 @@ async function createServices() {
 
 async function startCreateSubscriptionSaga() {
   const services = await createServices()
-  await services.subscription.act("create.subscription", {
-    vehicleId: "TEST-VEHICLE"
+  await services.subscription.act('create.subscription', {
+    vehicleId: 'TEST-VEHICLE'
   })
 }
 

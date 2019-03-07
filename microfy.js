@@ -1,5 +1,5 @@
-const Fastify = require("fastify")
-const axios = require("axios")
+const Fastify = require('fastify')
+const axios = require('axios')
 
 const localServices = {}
 
@@ -14,7 +14,7 @@ function parseResponse(response) {
 }
 
 function handleResponseError(err) {
-  console.log("***error", err)
+  console.log('***error', err)
   throw err
 }
 
@@ -26,7 +26,7 @@ const proxyHandler = {
           act: (actionName, payload, config) => {
             // TODO: ABSTRACT
             return axios({
-              method: "post",
+              method: 'post',
               url: buildActionUrl(prop, actionName),
               data: payload
             })
@@ -36,7 +36,7 @@ const proxyHandler = {
           get: (actionName, params, config) => {
             // TODO: ABSTRACT
             return axios({
-              method: "get",
+              method: 'get',
               url: buildActionUrl(prop, actionName),
               params: payload
             })
@@ -58,15 +58,15 @@ function build(
 
   function registerRoutes() {
     Object.entries(actions).forEach(([actionName, config]) => {
-      createRoute({ actionName, config, method: "POST" })
+      createRoute({ actionName, config, method: 'POST' })
     })
 
     Object.entries(queries).forEach(([actionName, config]) => {
-      createRoute({ actionName, config, method: "GET" })
+      createRoute({ actionName, config, method: 'GET' })
     })
 
     Object.entries(subscriptions).forEach(([eventName, config]) => {
-      throw new Error("Not implemented: TODO: NATS Streaming integration")
+      throw new Error('Not implemented: TODO: NATS Streaming integration')
     })
   }
 
