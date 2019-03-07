@@ -5,10 +5,11 @@ const services = Microfy(
   {
     actions: {
       'create.subscription': async ({ vehicleId }) => {
-        const id = 'sample'
+        const subscription = { vehicleId }
         console.log('Pending subscription created')
         await services.vehicle.act('reserve.vehicle', { vehicleId })
         await services.billing.act('create.bill', {})
+        await services.publish('subscription.created', 'yay')
         console.log('Subscription activated')
         return {}
       }
@@ -57,10 +58,25 @@ const billingService = Microfy(
   }
 )
 
+const notificationService = Microfy(
+  'notification',
+  {
+    subscriptions: {
+      'subscription.created': data => {
+        console.log('***subscription created', data)
+      }
+    }
+  },
+  {
+    port: 3003
+  }
+)
+
 async function createServices() {
   await services.start()
   await vehicleService.start()
   await billingService.start()
+  await notificationService.start()
 }
 
 async function startCreateSubscriptionSaga() {

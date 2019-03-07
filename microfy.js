@@ -1,5 +1,6 @@
 const Fastify = require('fastify')
 const axios = require('axios')
+const NatsStreaming = require('./src/nats-streaming')
 
 const localServices = {}
 
@@ -55,6 +56,8 @@ function build(
   localServices[serviceName] = port
 
   const fastify = Fastify({ logger: true })
+  const topicSubscriptions = {}
+  let stan = null
 
   function registerRoutes() {
     Object.entries(actions).forEach(([actionName, config]) => {
@@ -65,18 +68,28 @@ function build(
       createRoute({ actionName, config, method: 'GET' })
     })
 
-    Object.entries(subscriptions).forEach(([eventName, config]) => {
-      throw new Error('Not implemented: TODO: NATS Streaming integration')
+    Object.entries(subscriptions).forEach(([topic, config]) => {
+      const handler = config.handler || config
+      natsOn(topic, handler)
     })
   }
 
   const service = new Proxy(
     {
       start: async () => {
+        await new Promise(resolve => {
+          stan = NatsStreaming({ serviceName })
+          stan.on('connect', err => {
+            console.log(err)
+            resolve()
+          })
+        })
         registerRoutes()
         await fastify.listen(port)
         return service
-      }
+      },
+      on: natsOn,
+      publish: natsPublish
     },
     proxyHandler
   )
@@ -91,6 +104,23 @@ function build(
       url: `/${actionName}`,
       handler // TODO: Abstract
     })
+  }
+
+  function natsOn(topic, handler) {
+    let topicSubscription = topicSubscriptions[topic]
+    if (!topicSubscription) {
+      const opts = stan.subscriptionOptions()
+      opts.setStartWithLastReceived()
+      opts.setDurableName(serviceName)
+      topicSubscription = stan.subscribe(topic, serviceName, opts)
+      topicSubscriptions[topic] = topicSubscription
+    }
+
+    topicSubscription.on('message', msg => handler(msg.getData()))
+  }
+
+  function natsPublish(topic, message) {
+    return stan.publish(topic, message)
   }
 }
 
