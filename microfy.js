@@ -113,7 +113,6 @@ function build(
     let topicSubscription = topicSubscriptions[subscriptionName]
     if (!topicSubscription) {
       const opts = stan.subscriptionOptions()
-      opts.setStartWithLastReceived()
       opts.setDurableName(subscriptionName)
       opts.setManualAckMode(true)
       topicSubscription = stan.subscribe(topic, subscriptionName, opts)
