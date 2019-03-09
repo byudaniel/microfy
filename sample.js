@@ -66,11 +66,22 @@ const billingService = Microfy(
 const notificationService = Microfy(
   'notification',
   {
-    subscriptions: {
-      'subscription.created': (data) => {
-        console.log('***subscription created', data)
+    subscriptions: [
+      {
+        topic: 'subscription.created',
+        id: 'send-email',
+        handler: (data) => {
+          console.log('***send email', data)
+        }
+      },
+      {
+        topic: 'subscription.created',
+        id: 'send-sms',
+        handler: (data) => {
+          console.log('***send sms', data)
+        }
       }
-    }
+    ]
   },
   {
     port: 3003

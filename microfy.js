@@ -49,7 +49,7 @@ const proxyHandler = {
 
 function build(
   serviceName,
-  { actions = {}, queries = {}, subscriptions = {} },
+  { actions = {}, queries = {}, subscriptions = [] },
   { port = 3000 } = {}
 ) {
   localServices[serviceName] = port
@@ -67,9 +67,8 @@ function build(
       createRoute({ actionName, config, method: 'GET' })
     })
 
-    Object.entries(subscriptions).forEach(([topic, config]) => {
-      const handler = config.handler || config
-      natsOn(topic, handler)
+    subscriptions.forEach(({ topic, id, handler }) => {
+      natsOn({ topic, id, handler })
     })
   }
 
@@ -109,21 +108,22 @@ function build(
     })
   }
 
-  function natsOn(topic, handler) {
-    let topicSubscription = topicSubscriptions[topic]
+  function natsOn({ topic, id, handler }) {
+    const subscriptionName = `${topic}${id}`
+    let topicSubscription = topicSubscriptions[subscriptionName]
     if (!topicSubscription) {
       const opts = stan.subscriptionOptions()
       opts.setStartWithLastReceived()
-      opts.setDurableName(serviceName)
-      topicSubscription = stan.subscribe(topic, serviceName, opts)
+      opts.setDurableName(subscriptionName)
+      topicSubscription = stan.subscribe(topic, subscriptionName, opts)
       topicSubscriptions[topic] = topicSubscription
     }
 
-    topicSubscription.on('message', (msg) => handler(msg.getData()))
+    topicSubscription.on('message', (msg) => handler(JSON.parse(msg.getData())))
   }
 
   function natsPublish(topic, message) {
-    return stan.publish(topic, message)
+    return stan.publish(topic, JSON.stringify(message))
   }
 }
 
