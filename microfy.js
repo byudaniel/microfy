@@ -15,7 +15,6 @@ function parseResponse(response) {
 }
 
 function handleResponseError(err) {
-  console.log('***error', err)
   throw err
 }
 
@@ -24,15 +23,15 @@ const proxyHandler = {
     return prop in obj
       ? obj[prop]
       : {
-          act: (actionName, payload, config) => {
+          act: async (actionName, payload, config) => {
             // TODO: ABSTRACT
-            return axios({
+            const response = await axios({
               method: 'post',
               url: buildActionUrl(prop, actionName),
               data: payload
-            })
-              .then(parseResponse)
-              .catch(handleResponseError)
+            }).catch(handleResponseError)
+
+            return parseResponse(response)
           },
           get: (actionName, params, config) => {
             // TODO: ABSTRACT
@@ -77,12 +76,12 @@ function build(
   const service = new Proxy(
     {
       start: async () => {
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           stan = NatsStreaming({ serviceName })
-          stan.on('connect', err => {
-            console.log(err)
+          stan.on('connect', () => {
             resolve()
           })
+          // TODO: HANDLE CONNECT ERROR
         })
         registerRoutes()
         await fastify.listen(port)
@@ -99,10 +98,14 @@ function build(
   function createRoute({ actionName, config, method }) {
     const handler = config.handler || config
 
+    const wrappedHandler = (req) => {
+      return handler(req.body || req.query)
+    }
+
     fastify.route({
       method,
       url: `/${actionName}`,
-      handler // TODO: Abstract
+      handler: wrappedHandler
     })
   }
 
@@ -116,7 +119,7 @@ function build(
       topicSubscriptions[topic] = topicSubscription
     }
 
-    topicSubscription.on('message', msg => handler(msg.getData()))
+    topicSubscription.on('message', (msg) => handler(msg.getData()))
   }
 
   function natsPublish(topic, message) {

@@ -1,24 +1,28 @@
 const Microfy = require('./microfy')
+const uuid = require('uuid/v4')
+
+const subscriptions = {}
+const vehicles = { vid1: 'test1' }
 
 const services = Microfy(
   'subscription',
   {
     actions: {
-      'create.subscription': async ({ vehicleId }) => {
-        const subscription = { vehicleId }
+      'create.subscription': async ({ firstName, lastName, vehicleId }) => {
+        const subscription = { id: uuid(), firstName, lastName, vehicleId, status: 'pending' }
+        subscriptions[subscription.id] = subscription
         console.log('Pending subscription created')
         await services.vehicle.act('reserve.vehicle', { vehicleId })
         await services.billing.act('create.bill', {})
+        subscription.status = 'active'
         await services.publish('subscription.created', 'yay')
         console.log('Subscription activated')
-        return {}
+        return subscription
       }
     },
     queries: {
       'get.subscription': async ({ id }) => {
-        return {
-          id
-        }
+        return subscriptions[id]
       }
     }
   },
@@ -32,6 +36,7 @@ const vehicleService = Microfy(
   {
     actions: {
       'reserve.vehicle': async ({ vehicleId }) => {
+        vehicles[vehicleId].status = 'active'
         console.log('Vehicle reserved')
         return {}
       }
@@ -62,7 +67,7 @@ const notificationService = Microfy(
   'notification',
   {
     subscriptions: {
-      'subscription.created': data => {
+      'subscription.created': (data) => {
         console.log('***subscription created', data)
       }
     }
@@ -81,12 +86,14 @@ async function createServices() {
 
 async function startCreateSubscriptionSaga() {
   await createServices()
-  await services.subscription.act('create.subscription', {
-    vehicleId: 'TEST-VEHICLE'
+  const subscription = await services.subscription.act('create.subscription', {
+    firstName: 'Test',
+    lastName: 'Last',
+    vehicleId: 'vid1'
   })
   console.log(
     await services.subscription.get('get.subscription', {
-      id: 'testSubscription'
+      id: subscription.id
     })
   )
 }
