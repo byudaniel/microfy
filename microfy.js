@@ -115,11 +115,19 @@ function build(
       const opts = stan.subscriptionOptions()
       opts.setStartWithLastReceived()
       opts.setDurableName(subscriptionName)
+      opts.setManualAckMode(true)
       topicSubscription = stan.subscribe(topic, subscriptionName, opts)
       topicSubscriptions[topic] = topicSubscription
     }
 
-    topicSubscription.on('message', (msg) => handler(JSON.parse(msg.getData())))
+    topicSubscription.on('message', async (msg) => {
+      try {
+        await handler(JSON.parse(msg.getData()))
+      } catch (err) {
+        // TODO: LOG AND PUT IN DLQ?
+      }
+      msg.ack()
+    })
   }
 
   function natsPublish(topic, message) {
