@@ -76,15 +76,16 @@ function build(
 
   const proxyConfig = {
     start: async () => {
-      await new Promise((resolve) => {
-        if (isNatsNeeded) {
+      if (isNatsNeeded) {
+        await new Promise((resolve) => {
           stan = NatsStreaming({ serviceName })
           stan.on('connect', () => {
             resolve()
           })
           // TODO: HANDLE CONNECT ERROR
-        }
-      })
+        })
+      }
+
       registerRoutes()
       await fastify.listen(port)
       return service
