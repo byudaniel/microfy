@@ -72,23 +72,29 @@ function build(
     })
   }
 
-  const service = new Proxy(
-    {
-      start: async () => {
-        await new Promise((resolve) => {
+  const isNatsNeeded = subscriptions.length > 0
+
+  const proxyConfig = {
+    start: async () => {
+      await new Promise((resolve) => {
+        if (isNatsNeeded) {
           stan = NatsStreaming({ serviceName })
           stan.on('connect', () => {
             resolve()
           })
           // TODO: HANDLE CONNECT ERROR
-        })
-        registerRoutes()
-        await fastify.listen(port)
-        return service
-      },
-      on: natsOn,
-      publish: natsPublish
+        }
+      })
+      registerRoutes()
+      await fastify.listen(port)
+      return service
     },
+    on: isNatsNeeded ? natsOn : undefined,
+    publish: isNatsNeeded ? natsPublish : undefined
+  }
+
+  const service = new Proxy(
+    proxyConfig,
     proxyHandler
   )
 
