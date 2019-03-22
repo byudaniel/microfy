@@ -39,7 +39,7 @@ const proxyHandler = {
             return axios({
               method: 'get',
               url: buildActionUrl(prop, actionName),
-              params: qs(params)
+              params: qs.stringify(params)
             })
               .then(parseResponse)
               .catch(handleResponseError)
@@ -106,7 +106,7 @@ function build(
     const handler = config.handler || config
 
     const wrappedHandler = (req) => {
-      return handler(req.body || req.query)
+      return handler(req.body || qs.parse(req.query[0]))
     }
 
     fastify.route({
