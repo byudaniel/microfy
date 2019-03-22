@@ -1,6 +1,7 @@
 const Fastify = require('fastify')
 const axios = require('axios')
 const NatsStreaming = require('./src/nats-streaming')
+const qs = require('qs')
 
 const localServices = {}
 
@@ -38,7 +39,7 @@ const proxyHandler = {
             return axios({
               method: 'get',
               url: buildActionUrl(prop, actionName),
-              params
+              params: qs(params)
             })
               .then(parseResponse)
               .catch(handleResponseError)
