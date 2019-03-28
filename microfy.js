@@ -50,7 +50,7 @@ const proxyHandler = {
 function build(
   serviceName,
   { actions = {}, queries = {}, subscriptions = [] },
-  { port = 3000 } = {}
+  { port = 3000, stanClusterName, natsUrl } = {}
 ) {
   localServices[serviceName] = port
 
@@ -76,7 +76,7 @@ function build(
     {
       start: async () => {
         await new Promise((resolve) => {
-          stan = NatsStreaming({ serviceName })
+          stan = NatsStreaming({ serviceName, stanClusterName, natsUrl })
           stan.on('connect', () => {
             resolve()
           })
